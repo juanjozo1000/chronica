@@ -1,8 +1,11 @@
 import { useState } from 'react'
 import Head from 'next/head'
+import { GetPayoutWalletsResponse } from './api/nmkr/get-payout-wallets'
 
 export default function Home() {
   const [loading, setLoading] = useState(false)
+  const [payoutWallets, setPayoutWallets] = useState<GetPayoutWalletsResponse | null>(null)
+
 
   const testNmkrApi = async () => {
     setLoading(true)
@@ -14,6 +17,26 @@ export default function Home() {
     } catch (error) {
       console.error('Error testing NMKR API:', error)
       alert('Error testing NMKR API - check console')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+
+  const getPayoutWallets = async () => {
+    setLoading(true)
+    setPayoutWallets(null)
+    try {
+      const response = await fetch('/api/nmkr/get-payout-wallets')
+      const data: GetPayoutWalletsResponse = await response.json()
+      setPayoutWallets(data)
+      console.log('Payout Wallets:', data)
+    } catch (error) {
+      console.error('Error fetching payout wallets:', error)
+      setPayoutWallets({
+        success: false,
+        error: 'Network error occurred'
+      })
     } finally {
       setLoading(false)
     }
@@ -68,7 +91,19 @@ export default function Home() {
             >
               {loading ? 'Testing...' : 'Test NMKR API Connection'}
             </button>
+            
+            <a href="/create-nft" className="create-nft-link">
+              Create NFT →
+            </a>
           </div>
+
+          <button 
+              className="payout-wallets-button" 
+              onClick={getPayoutWallets}
+              disabled={loading}
+            >
+              {loading ? 'Loading...' : 'Get Payout Wallets'}
+            </button>
         </main>
       </div>
     </>
