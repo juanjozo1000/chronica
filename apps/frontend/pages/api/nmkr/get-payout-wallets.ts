@@ -1,6 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import { NMKRClient } from 'nmkr-studio-api'
 import { nmkrConfig, validateNmkrConfig } from '../../../lib/nmkr-config'
+import { generateNftFingerprint } from '@/utils/nft-fingerprint-generator'
 
 export interface PayoutWallet {
   walletAddress?: string | null
@@ -29,6 +30,7 @@ export default async function handler(
   try {
     // Validate NMKR configuration
     validateNmkrConfig()
+    console.log("generateNftFingerprint", generateNftFingerprint("chronica_pruebamedia_2025-06-14_11-05-34"))
 
     // Initialize NMKR client
     const nmkrClient = new NMKRClient({
