@@ -1,1 +1,0 @@
-# Chronica Backend Application 
