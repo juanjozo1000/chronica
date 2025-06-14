@@ -1,11 +1,13 @@
 // CIP-25 NFT Metadata Types
 export interface NftMetadata {
-  title: string
+  title: string | string[]
   minting_timestamp: string
   event_timestamp?: string
-  geo_location?: string
+  geo_location?: string | string[]
   entries: string[]
-  media: string
+  media: string | string[]
+  image: string | string[]
+  media_type: string
   authority_type: string
   tags: string[]
   culture: string
@@ -16,7 +18,8 @@ export interface AssetMetadata {
 }
 
 export interface PolicyMetadata {
-  [policyId: string]: AssetMetadata
+  [policyId: string]: AssetMetadata | string
+  version: string
 }
 
 export interface Cip25Metadata {

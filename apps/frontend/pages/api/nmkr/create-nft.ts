@@ -149,14 +149,16 @@ export default async function handler(
       geoLocation: geoLocation,
       tags: tags,
       culture: culture
-    })
+    },
+    ipfsHashFromResult
+  )
 
     // Prepare the NFT file object using IPFS hash
     const previewImageNft = {
       mimetype: mediaFile.mimetype || 'application/octet-stream',
       fileFromBase64: null,
-      fileFromsUrl: null,
-      fileFromIPFS: ipfsHash,
+      fileFromsUrl: process.env.IPFS_MEDIA_BASE_URL + ipfsHash,
+      // fileFromIPFS: ipfsHash,
     }
 
     // Prepare the upload request
