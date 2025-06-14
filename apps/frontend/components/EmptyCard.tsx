@@ -9,7 +9,8 @@ import {
   Box,
 } from "@mui/material";
 import { LocationOn } from "@mui/icons-material";
-import styled from "@emotion/styled";
+import { styled } from "@mui/material/styles";
+import { Theme } from "@mui/material/styles";
 
 interface EmptyCardProps {
   imageUrl?: string;
@@ -24,7 +25,7 @@ interface EmptyCardProps {
 const StyledCard = styled(Card)(({ theme }) => ({
   height: "100%",
   display: "flex",
-  flexDirection: "column",
+  flexDirection: "column" as const,
   transition: "transform 0.2s ease-in-out",
   minWidth: "300px",
   maxWidth: "400px",

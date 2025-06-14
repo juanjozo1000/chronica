@@ -14,8 +14,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@emotion/react": "^11.14.0",
-    "@emotion/styled": "^11.14.0",
+    "@emotion/react": "^11.11.3",
+    "@emotion/styled": "^11.11.0",
     "@emurgo/cardano-serialization-lib-nodejs": "^14.1.2",
     "@emurgo/cip14-js": "^3.0.1",
     "@mui/icons-material": "^7.1.1",
@@ -23,7 +23,7 @@
     "@types/formidable": "^3.4.5",
     "@types/qrcode": "^1.5.5",
     "formidable": "^3.5.4",
-    "next": "^14.0.4",
+    "next": "^14.1.0",
     "nmkr-studio-api": "^1.0.33",
     "qrcode": "^1.5.4",
     "react": "^18.2.0",
@@ -31,9 +31,9 @@
     "sharp": "^0.34.2"
   },
   "devDependencies": {
-    "@types/node": "^20.10.5",
-    "@types/react": "^18.2.45",
-    "@types/react-dom": "^18.2.18",
+    "@types/node": "^20.11.19",
+    "@types/react": "^18.2.55",
+    "@types/react-dom": "^18.2.19",
     "typescript": "^5.3.3"
   },
   "engines": {

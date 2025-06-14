@@ -31,6 +31,8 @@ import {
 } from "@mui/icons-material";
 import { EmptyCard } from "../../components/EmptyCard";
 import { getLocationFromCoordinates } from "@/utils/geocoding";
+import { Grid as MuiGrid } from "@mui/material";
+import type { GridProps } from "@mui/material/Grid";
 
 // Styled components
 const StyledCard = styled(Card)(({ theme }) => ({
@@ -173,16 +175,16 @@ export default function Forum() {
 
       {/* Filters */}
       <Box sx={{ mb: 4 }}>
-        <Grid container spacing={2}>
-          <Grid item xs={12} sm={6} md={2}>
+        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
+          <Box sx={{ flex: "1 1 200px", minWidth: "200px" }}>
             <TextField
               fullWidth
               label="Date"
               value={filters.date}
               onChange={handleFilterChange("date")}
             />
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          </Box>
+          <Box sx={{ flex: "1 1 300px", minWidth: "200px" }}>
             <FormControl fullWidth>
               <InputLabel>Tag</InputLabel>
               <Select
@@ -199,40 +201,54 @@ export default function Forum() {
                 ))}
               </Select>
             </FormControl>
-          </Grid>
-          <Grid item xs={12} sm={6} md={2}>
+          </Box>
+          <Box sx={{ flex: "1 1 200px", minWidth: "200px" }}>
             <TextField
               fullWidth
               label="Country"
               value={filters.country}
               onChange={handleFilterChange("country")}
             />
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          </Box>
+          <Box sx={{ flex: "1 1 300px", minWidth: "200px" }}>
             <TextField
               fullWidth
               label="City"
               value={filters.city}
               onChange={handleFilterChange("city")}
             />
-          </Grid>
-        </Grid>
+          </Box>
+        </Box>
       </Box>
 
       {/* Asset Grid */}
-      <Grid container spacing={3} justifyContent="center">
+      <Box
+        sx={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 3,
+          justifyContent: "center",
+        }}
+      >
         {loading || error || filteredAssets.length === 0
           ? Array.from(new Array(6)).map((_, index) => (
-              <Grid item xs={12} sm={6} md={4} key={index}>
+              <Box
+                key={index}
+                sx={{ flex: "1 1 250px", maxWidth: "280px", width: "100%" }}
+              >
                 <EmptyCard isLoading={true} />
-              </Grid>
+              </Box>
             ))
           : filteredAssets.map((asset) => (
-              <Grid item xs={12} sm={6} md={4} key={asset.asset}>
+              <Box
+                key={asset.asset}
+                sx={{ flex: "1 1 250px", maxWidth: "280px", width: "100%" }}
+              >
                 <Box
                   sx={{
                     position: "relative",
                     cursor: "pointer",
+                    width: "100%",
                     "&:hover": {
                       transform: "scale(1.02)",
                       transition: "transform 0.2s ease-in-out",
@@ -249,7 +265,7 @@ export default function Forum() {
                       asset.onchain_metadata?.entries?.[0] ||
                       "No description available"
                     }
-                    price={100} // Default price since it's not in onchain_metadata
+                    price={100}
                     tags={asset.onchain_metadata?.tags || []}
                     location={
                       locationInfo[asset.asset]
@@ -261,9 +277,9 @@ export default function Forum() {
                     }
                   />
                 </Box>
-              </Grid>
+              </Box>
             ))}
-      </Grid>
+      </Box>
 
       {/* Buy Dialog */}
       <Dialog
@@ -291,7 +307,7 @@ export default function Forum() {
             <DialogContent>
               <Box sx={{ p: 2 }}>
                 <Grid container spacing={4}>
-                  <Grid item xs={12} md={6}>
+                  <Grid component="div">
                     <Box
                       component="img"
                       src={selectedAsset.onchain_metadata?.image}
@@ -322,7 +338,7 @@ export default function Forum() {
                       )}
                     </Box>
                   </Grid>
-                  <Grid item xs={12} md={6}>
+                  <Grid container>
                     <Box sx={{ mb: 3 }}>
                       <Typography
                         variant="subtitle1"
