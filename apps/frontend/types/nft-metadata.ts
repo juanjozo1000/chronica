@@ -5,7 +5,7 @@ export interface NftMetadata {
   event_timestamp?: string
   geo_location?: string | string[]
   entries: string[]
-  media: string | string[]
+  // media: string | string[]
   image: string | string[]
   media_type: string
   authority_type: string

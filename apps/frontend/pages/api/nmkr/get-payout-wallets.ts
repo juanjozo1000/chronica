@@ -30,7 +30,7 @@ export default async function handler(
   try {
     // Validate NMKR configuration
     validateNmkrConfig()
-    console.log("generateNftFingerprint", generateNftFingerprint("chronica_pruebamedia_2025-06-14_11-05-34"))
+    console.log("generateNftFingerprint", generateNftFingerprint("cnc_2025-06-14130903942"))
 
     // Initialize NMKR client
     const nmkrClient = new NMKRClient({

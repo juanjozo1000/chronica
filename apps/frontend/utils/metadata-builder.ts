@@ -10,8 +10,8 @@ import { nmkrConfig } from '../lib/nmkr-config'
  */
 export function createUniqueAssetName(baseName: string, timestamp?: Date): string {
   const time = timestamp || new Date()
-  const timestampStr = time.toISOString().replace(/[:.]/g, '-').replace('T', '_').slice(0, 19)
-  return `chronica_${baseName}_${timestampStr}`
+  const timestampStr = Math.floor(time.getTime() / 1000).toString()
+  return `cro_${baseName.slice(0, 3)}_${timestampStr}`
 }
 
 /**
@@ -35,10 +35,10 @@ function splitLongString(text: string): string | string[] {
  * @param params - Parameters for creating the metadata
  * @returns Complete CIP-25 metadata object
  */
-export function createCip25Metadata(params: CreateNftRequest, ipfsHash: string): Cip25Metadata {
-  const time = new Date()
+export function createCip25Metadata(params: CreateNftRequest, asset_name: string, ipfsHash: string, time: Date): Cip25Metadata {
+  
   const timestamp = time.toISOString().replace(/[:.]/g, '-').replace('T', '_').slice(0, 19)
-  const asset_name = createUniqueAssetName(params.title, time)
+  
   let split_description = splitLongString(params.description || "No description provided")
   if (!Array.isArray(split_description)) {
     split_description = [split_description]
@@ -49,10 +49,10 @@ export function createCip25Metadata(params: CreateNftRequest, ipfsHash: string):
     title: splitLongString(params.title),
     minting_timestamp: timestamp,
     entries: params.description ? split_description : ['No description provided'],
-    media: splitLongString(ipfsHash),
+    // media: splitLongString(ipfsHash),
     image: splitLongString(ipfsHash),
     media_type: params.mimetype || "image/png",
-    authority_type: "Media",
+    authority_type: "Bystander",
     tags: params.tags || [],
     culture: params.culture || "EN-US"
   }

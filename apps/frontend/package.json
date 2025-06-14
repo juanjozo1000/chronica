@@ -21,11 +21,14 @@
     "@mui/icons-material": "^7.1.1",
     "@mui/material": "^7.1.1",
     "@types/formidable": "^3.4.5",
+    "@types/qrcode": "^1.5.5",
     "formidable": "^3.5.4",
     "next": "^14.0.4",
     "nmkr-studio-api": "^1.0.33",
+    "qrcode": "^1.5.4",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "sharp": "^0.34.2"
   },
   "devDependencies": {
     "@types/node": "^20.10.5",
