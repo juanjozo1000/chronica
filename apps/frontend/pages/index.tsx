@@ -95,6 +95,10 @@ export default function Home() {
             <a href="/create-nft" className="create-nft-link">
               Create NFT →
             </a>
+            
+            <a href="/capture-media" className="capture-media-link">
+              📸 Capture Media →
+            </a>
           </div>
 
           <button 
