@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Box,
   Container,
@@ -20,15 +20,22 @@ import {
   FormControl,
   InputLabel,
   Skeleton,
+  IconButton,
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import { useBlockfrostAssets } from "../../components/BlockfrostAssets";
-import type { GridProps } from "@mui/material/Grid";
+import {
+  Search as SearchIcon,
+  Close as CloseIcon,
+  LocationOn,
+} from "@mui/icons-material";
+import { EmptyCard } from "../../components/EmptyCard";
+import { getLocationFromCoordinates } from "@/utils/geocoding";
 
 // Styled components
 const StyledCard = styled(Card)(({ theme }) => ({
   width: "300px",
-  height: "450px", // Increased fixed height to accommodate 2 lines of tags
+  height: "450px",
   transition: "transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out",
   "&:hover": {
     transform: "translateY(-8px)",
@@ -36,29 +43,12 @@ const StyledCard = styled(Card)(({ theme }) => ({
   },
 }));
 
-const EmptyCard = () => (
-  <StyledCard>
-    <Skeleton variant="rectangular" height={200} />
-    <CardContent
-      sx={{
-        height: "250px",
-        display: "flex",
-        flexDirection: "column",
-      }}
-    >
-      <Skeleton variant="text" height={40} />
-      <Skeleton variant="text" width="60%" />
-      <Box sx={{ mt: 1, mb: 2, display: "flex", gap: 1, flexWrap: "wrap" }}>
-        <Skeleton variant="rounded" width={60} height={24} />
-        <Skeleton variant="rounded" width={80} height={24} />
-        <Skeleton variant="rounded" width={70} height={24} />
-      </Box>
-      <Skeleton variant="rectangular" height={36} sx={{ mt: "auto" }} />
-    </CardContent>
-  </StyledCard>
-);
+interface LocationInfo {
+  country: string;
+  city: string;
+}
 
-const Forum = () => {
+export default function Forum() {
   const { assets, loading, error } = useBlockfrostAssets();
   const [selectedAsset, setSelectedAsset] = useState<any>(null);
   const [openDialog, setOpenDialog] = useState(false);
@@ -68,9 +58,12 @@ const Forum = () => {
     country: "",
     city: "",
   });
+  const [locationInfo, setLocationInfo] = useState<{
+    [key: string]: LocationInfo;
+  }>({});
 
   // Get unique tags from all assets
-  const uniqueTags = React.useMemo(() => {
+  const uniqueTags = useMemo(() => {
     const tags = new Set<string>();
     assets.forEach((asset) => {
       asset.metadata?.tags?.forEach((tag: string) => tags.add(tag));
@@ -103,6 +96,39 @@ const Forum = () => {
       (!filters.city || metadata.location?.city === filters.city)
     );
   });
+
+  useEffect(() => {
+    const fetchLocationInfo = async () => {
+      const newLocationInfo: { [key: string]: LocationInfo } = {};
+
+      for (const asset of assets) {
+        console.log("Processing asset:", asset.asset);
+        console.log("Asset metadata:", asset.metadata);
+
+        if (asset.metadata?.gps_latitude && asset.metadata?.gps_longitude) {
+          console.log("Found GPS coordinates:", {
+            latitude: asset.metadata.gps_latitude,
+            longitude: asset.metadata.gps_longitude,
+          });
+
+          const location = await getLocationFromCoordinates(
+            asset.metadata.gps_latitude,
+            asset.metadata.gps_longitude
+          );
+          newLocationInfo[asset.asset] = location;
+        } else {
+          console.log("No GPS coordinates found for asset:", asset.asset);
+        }
+      }
+
+      console.log("Final location info:", newLocationInfo);
+      setLocationInfo(newLocationInfo);
+    };
+
+    if (assets.length > 0) {
+      fetchLocationInfo();
+    }
+  }, [assets]);
 
   if (loading) {
     return (
@@ -187,71 +213,41 @@ const Forum = () => {
       {/* Asset Grid */}
       <Grid container spacing={3} justifyContent="center">
         {loading || error || filteredAssets.length === 0
-          ? // Show skeleton loaders
-            Array.from(new Array(6)).map((_, index) => (
-              <Grid item key={index} xs={12} sm={6} md={4}>
-                <EmptyCard />
+          ? Array.from(new Array(6)).map((_, index) => (
+              <Grid item xs={12} sm={6} md={4} key={index}>
+                <EmptyCard isLoading={true} />
               </Grid>
             ))
-          : // Show actual assets
-            filteredAssets.map((asset) => (
-              <Grid item key={asset.asset} xs={12} sm={6} md={4}>
-                <StyledCard>
-                  <CardMedia
-                    component="img"
-                    height="200"
-                    sx={{ height: "200px", objectFit: "cover" }}
-                    image={asset.metadata?.image || "/placeholder-image.jpg"}
-                    alt={asset.metadata?.name || "NFT Asset"}
+          : filteredAssets.map((asset) => (
+              <Grid item xs={12} sm={6} md={4} key={asset.asset}>
+                <Box
+                  sx={{
+                    position: "relative",
+                    cursor: "pointer",
+                    "&:hover": {
+                      transform: "scale(1.02)",
+                      transition: "transform 0.2s ease-in-out",
+                    },
+                  }}
+                  onClick={() => handleBuyClick(asset)}
+                >
+                  <EmptyCard
+                    imageUrl={asset.metadata?.image}
+                    title={asset.metadata?.title || "Untitled"}
+                    description={
+                      asset.metadata?.description || "No description available"
+                    }
+                    price={asset.metadata?.price || 100}
+                    tags={asset.metadata?.tags || []}
+                    location={
+                      locationInfo[asset.asset]
+                        ? `${locationInfo[asset.asset].city}, ${
+                            locationInfo[asset.asset].country
+                          }`
+                        : "Location unknown"
+                    }
                   />
-                  <CardContent
-                    sx={{
-                      height: "250px",
-                      display: "flex",
-                      flexDirection: "column",
-                    }}
-                  >
-                    <Typography
-                      gutterBottom
-                      variant="h5"
-                      component="div"
-                      noWrap
-                    >
-                      {asset.metadata?.name || "Untitled Asset"}
-                    </Typography>
-                    <Typography variant="h6" color="primary">
-                      €{asset.metadata?.price || 100}
-                    </Typography>
-                    <Stack
-                      direction="row"
-                      spacing={0}
-                      sx={{
-                        mt: 1,
-                        mb: 2,
-                        flexWrap: "wrap",
-                        gap: "4px",
-                        maxHeight: "56px",
-                        overflow: "hidden",
-                        minHeight: "56px",
-                        "& > *": {
-                          margin: 0,
-                        },
-                      }}
-                    >
-                      {asset.metadata?.tags?.map((tag: string) => (
-                        <Chip key={tag} label={tag} size="small" />
-                      ))}
-                    </Stack>
-                    <Button
-                      variant="contained"
-                      fullWidth
-                      sx={{ mt: "auto" }}
-                      onClick={() => handleBuyClick(asset)}
-                    >
-                      Buy
-                    </Button>
-                  </CardContent>
-                </StyledCard>
+                </Box>
               </Grid>
             ))}
       </Grid>
@@ -263,69 +259,160 @@ const Forum = () => {
         maxWidth="md"
         fullWidth
       >
-        <DialogTitle>Purchase Media Rights</DialogTitle>
-        <DialogContent>
-          {selectedAsset && (
-            <Box sx={{ mt: 2 }}>
-              <Typography variant="h6" gutterBottom>
-                {selectedAsset.metadata?.name || "Untitled Asset"}
-              </Typography>
-              <Typography variant="body1" paragraph>
-                Price: €{selectedAsset.metadata?.price || 100}
-              </Typography>
-              <Typography variant="subtitle1" gutterBottom>
-                Asset Details:
-              </Typography>
-              <pre
-                style={{
-                  backgroundColor: "#f5f5f5",
-                  padding: "1rem",
-                  borderRadius: "4px",
-                }}
+        {selectedAsset && (
+          <>
+            <DialogTitle>
+              <Box
+                display="flex"
+                justifyContent="space-between"
+                alignItems="center"
               >
-                {JSON.stringify(
-                  {
-                    "721": {
-                      [selectedAsset.policy_id]: {
-                        [selectedAsset.asset_name]: {
-                          title:
-                            selectedAsset.metadata?.name || "Untitled Asset",
-                          minting_timestamp: selectedAsset.metadata?.date || "",
-                          event_timestamp: "",
-                          geo_location: "9.12.566238",
-                          entries: ["Sample content entry"],
-                          media: selectedAsset.metadata?.image || "",
-                          authority_type: "Media",
-                          tags: selectedAsset.metadata?.tags || [],
-                          culture: "EN-US",
-                        },
-                      },
-                    },
-                  },
-                  null,
-                  2
-                )}
-              </pre>
-              <Typography variant="subtitle1" gutterBottom sx={{ mt: 2 }}>
-                Payment Methods:
-              </Typography>
-              <Stack direction="row" spacing={2}>
-                <Button variant="outlined">Credit Card</Button>
-                <Button variant="outlined">PayPal</Button>
-                <Button variant="outlined">Crypto</Button>
-              </Stack>
-            </Box>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog}>Cancel</Button>
-          <Button variant="contained" color="primary">
-            Confirm Purchase
-          </Button>
-        </DialogActions>
+                <Typography variant="h5">
+                  {selectedAsset.metadata?.title || "Untitled"}
+                </Typography>
+                <IconButton onClick={handleCloseDialog}>
+                  <CloseIcon />
+                </IconButton>
+              </Box>
+            </DialogTitle>
+            <DialogContent>
+              <Box sx={{ p: 2 }}>
+                <Grid container spacing={4}>
+                  <Grid item xs={12} md={6}>
+                    <Box
+                      component="img"
+                      src={selectedAsset.metadata?.image}
+                      alt={selectedAsset.metadata?.title || "Asset image"}
+                      sx={{
+                        width: "100%",
+                        height: "auto",
+                        borderRadius: 2,
+                        mb: 2,
+                      }}
+                    />
+                    <Typography variant="h6" gutterBottom>
+                      €{selectedAsset.metadata?.price || 100}
+                    </Typography>
+                    <Box sx={{ mb: 2 }}>
+                      {selectedAsset.metadata?.tags?.map((tag: string) => (
+                        <Chip
+                          key={tag}
+                          label={tag}
+                          size="small"
+                          sx={{ mr: 1, mb: 1 }}
+                        />
+                      ))}
+                    </Box>
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <Box sx={{ mb: 3 }}>
+                      <Typography
+                        variant="subtitle1"
+                        color="text.secondary"
+                        gutterBottom
+                      >
+                        Description
+                      </Typography>
+                      <Typography variant="body1">
+                        {selectedAsset.metadata?.description ||
+                          "No description available"}
+                      </Typography>
+                    </Box>
+
+                    <Box sx={{ mb: 3 }}>
+                      <Typography
+                        variant="subtitle1"
+                        color="text.secondary"
+                        gutterBottom
+                      >
+                        Location
+                      </Typography>
+                      <Typography
+                        variant="body1"
+                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                      >
+                        <LocationOn fontSize="small" />
+                        {locationInfo[selectedAsset.asset]
+                          ? `${locationInfo[selectedAsset.asset].city}, ${
+                              locationInfo[selectedAsset.asset].country
+                            }`
+                          : "Location unknown"}
+                      </Typography>
+                    </Box>
+
+                    <Box sx={{ mb: 3 }}>
+                      <Typography
+                        variant="subtitle1"
+                        color="text.secondary"
+                        gutterBottom
+                      >
+                        Asset Details
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Policy ID: {selectedAsset.policy_id}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Asset ID: {selectedAsset.asset}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Fingerprint: {selectedAsset.fingerprint}
+                      </Typography>
+                    </Box>
+
+                    <Box sx={{ mb: 3 }}>
+                      <Typography
+                        variant="subtitle1"
+                        color="text.secondary"
+                        gutterBottom
+                      >
+                        Payment Methods
+                      </Typography>
+                      <Stack direction="row" spacing={2}>
+                        <Button
+                          variant="outlined"
+                          startIcon={
+                            <img
+                              src="/credit-card.svg"
+                              alt="Credit Card"
+                              style={{ width: 20, height: 20 }}
+                            />
+                          }
+                        >
+                          Credit Card
+                        </Button>
+                        <Button
+                          variant="outlined"
+                          startIcon={
+                            <img
+                              src="/paypal.svg"
+                              alt="PayPal"
+                              style={{ width: 20, height: 20 }}
+                            />
+                          }
+                        >
+                          PayPal
+                        </Button>
+                        <Button
+                          variant="outlined"
+                          startIcon={
+                            <img
+                              src="/crypto.svg"
+                              alt="Crypto"
+                              style={{ width: 20, height: 20 }}
+                            />
+                          }
+                        >
+                          Crypto
+                        </Button>
+                      </Stack>
+                    </Box>
+                  </Grid>
+                </Grid>
+              </Box>
+            </DialogContent>
+          </>
+        )}
       </Dialog>
     </Container>
   );
-};
-
-export default Forum;
+}

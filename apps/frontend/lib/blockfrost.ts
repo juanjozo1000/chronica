@@ -9,15 +9,16 @@ export interface BlockfrostAsset {
   quantity: string;
   initial_mint_tx_hash: string;
   metadata?: {
-    name?: string;
-    description?: string;
+    title?: string;
+    minting_timestamp?: string;
+    entries?: string[];
     image?: string;
-    price?: number;
+    media_type?: string;
+    authority_type?: string;
     tags?: string[];
-    location?: {
-      country: string;
-      city: string;
-    };
+    culture?: string;
+    event_timestamp?: string;
+    geo_location?: string;
   };
 }
 
