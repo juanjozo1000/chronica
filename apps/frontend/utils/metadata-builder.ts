@@ -19,7 +19,7 @@ export function createUniqueAssetName(baseName: string, timestamp?: Date): strin
  * @param params - Parameters for creating the metadata
  * @returns Complete CIP-25 metadata object
  */
-export function createCip25Metadata(params: CreateNftRequest): Cip25Metadata {
+export function createCip25Metadata(params: CreateNftRequest, ipfsHash: string): Cip25Metadata {
   const time = new Date()
   const timestamp = time.toISOString().replace(/[:.]/g, '-').replace('T', '_').slice(0, 19)
   const asset_name = createUniqueAssetName(params.title, time)
@@ -29,7 +29,9 @@ export function createCip25Metadata(params: CreateNftRequest): Cip25Metadata {
     title: params.title,
     minting_timestamp: timestamp,
     entries: params.description ? [params.description] : ['No description provided'],
-    media: 'ipfs://placeholder',
+    media: ipfsHash,
+    image: ipfsHash,
+    media_type: params.mimetype || "image/png",
     authority_type: "Media",
     tags: params.tags || [],
     culture: params.culture || "EN-US"
@@ -49,7 +51,7 @@ export function createCip25Metadata(params: CreateNftRequest): Cip25Metadata {
       [nmkrConfig.policyId as string]: {
         [asset_name]: nftMetadata
       },
-      // "version": "1.0"
+      version: "1.0"
     }
   }
 }

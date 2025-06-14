@@ -6,6 +6,8 @@ export interface NftMetadata {
   geo_location?: string
   entries: string[]
   media: string
+  image: string
+  media_type: string
   authority_type: string
   tags: string[]
   culture: string
@@ -16,7 +18,8 @@ export interface AssetMetadata {
 }
 
 export interface PolicyMetadata {
-  [policyId: string]: AssetMetadata
+  [policyId: string]: AssetMetadata | string
+  version: string
 }
 
 export interface Cip25Metadata {
