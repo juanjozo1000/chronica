@@ -4,6 +4,8 @@ import { nmkrConfig, validateNmkrConfig } from '../../../lib/nmkr-config'
 import { createCip25Metadata, createUniqueAssetName } from '../../../utils/metadata-builder'
 import formidable from 'formidable'
 import fs from 'fs'
+import { generateNftFingerprint } from '../../../utils/nft-fingerprint-generator'
+import { addQRCodeOverlay } from '../../../utils/qr-overlay'
 
 export const config = {
   api: {
@@ -105,6 +107,12 @@ export default async function handler(
       TOKEN: nmkrConfig.apiKey,
     })
 
+    // Put QR of pool url into the image
+    const time = new Date()
+    const asset_name = createUniqueAssetName(title, time)
+    const nftFingerprint = generateNftFingerprint(asset_name)
+    const poolUrl = `https://pool.pm/${nftFingerprint}`
+
     // Upload file to IPFS
     console.log('Uploading file to IPFS...', {
       originalFilename: mediaFile.originalFilename,
@@ -113,8 +121,24 @@ export default async function handler(
     })
 
     // Read file content
-    const fileBuffer = fs.readFileSync(mediaFile.filepath)
-    const fileBase64 = fileBuffer.toString('base64')
+    const originalFileBuffer = fs.readFileSync(mediaFile.filepath)
+    
+    // Add QR code overlay to the image
+    console.log('Adding QR code overlay to image...', {
+      poolUrl: poolUrl,
+      imageSize: originalFileBuffer.length
+    })
+    
+    const processedFileBuffer = await addQRCodeOverlay(originalFileBuffer, {
+      qrContent: poolUrl,
+      qrSize: 0.05, // 5% of image area
+      backgroundColor: 'white',
+      backgroundOpacity: 0.7, // 70% transparency
+      position: 'bottom-right',
+      margin: 10
+    })
+    
+    const fileBase64 = processedFileBuffer.toString('base64')
 
     // Upload to IPFS using NMKR client
     // Note: We need to provide a customerid. For simplicity, we'll use 1 as default customer ID
@@ -138,8 +162,7 @@ export default async function handler(
 
     // Remove ipfs:// prefix if present
     const ipfsHash = ipfsHashFromResult.startsWith('ipfs://') ? ipfsHashFromResult.replace('ipfs://', '') : ipfsHashFromResult
-    const time = new Date()
-    const asset_name = createUniqueAssetName(title, time)
+    
     // Create CIP-25 compliant metadata
     const cip25Metadata = createCip25Metadata({
       title: title,

@@ -49,10 +49,10 @@ export function createCip25Metadata(params: CreateNftRequest, asset_name: string
     title: splitLongString(params.title),
     minting_timestamp: timestamp,
     entries: params.description ? split_description : ['No description provided'],
-    media: splitLongString(ipfsHash),
+    // media: splitLongString(ipfsHash),
     image: splitLongString(ipfsHash),
     media_type: params.mimetype || "image/png",
-    authority_type: "Media",
+    authority_type: "Bystander",
     tags: params.tags || [],
     culture: params.culture || "EN-US"
   }
