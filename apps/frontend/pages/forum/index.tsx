@@ -299,7 +299,7 @@ export default function Forum() {
                 <Typography variant="h5">
                   {selectedAsset.onchain_metadata?.title || "Untitled"}
                 </Typography>
-                <IconButton onClick={handleCloseDialog}>
+                <IconButton onClick={handleCloseDialog} size="large">
                   <CloseIcon />
                 </IconButton>
               </Box>
@@ -310,7 +310,10 @@ export default function Forum() {
                   <Grid component="div">
                     <Box
                       component="img"
-                      src={selectedAsset.onchain_metadata?.image}
+                      src={
+                        IPFS_MEDIA_BASE_URL +
+                        selectedAsset.onchain_metadata?.image
+                      }
                       alt={
                         selectedAsset.onchain_metadata?.title || "Asset image"
                       }
@@ -319,6 +322,7 @@ export default function Forum() {
                         height: "auto",
                         borderRadius: 2,
                         mb: 2,
+                        objectFit: "cover",
                       }}
                     />
                     <Typography variant="h6" gutterBottom>
@@ -410,43 +414,24 @@ export default function Forum() {
                         Payment Methods
                       </Typography>
                       <Stack direction="row" spacing={2}>
-                        <Button
-                          variant="outlined"
-                          startIcon={
-                            <img
-                              src="/credit-card.svg"
-                              alt="Credit Card"
-                              style={{ width: 24, height: 16 }}
-                            />
-                          }
-                        >
-                          Credit Card
-                        </Button>
-                        <Button
-                          variant="outlined"
-                          startIcon={
-                            <img
-                              src="/ada.svg"
-                              alt="ADA"
-                              style={{ width: 24, height: 24 }}
-                            />
-                          }
-                        >
-                          ADA
-                        </Button>
-                        <Button
-                          variant="outlined"
-                          startIcon={
-                            <img
-                              src="/usdm.svg"
-                              alt="USDM"
-                              style={{ width: 24, height: 24 }}
-                            />
-                          }
-                        >
-                          USDM
-                        </Button>
+                        <Button variant="outlined">Credit Card</Button>
+                        <Button variant="outlined">ADA</Button>
+                        <Button variant="outlined">USDM</Button>
                       </Stack>
+                    </Box>
+
+                    <Box sx={{ width: "100%", mt: 2 }}>
+                      <Button
+                        variant="contained"
+                        fullWidth
+                        size="large"
+                        onClick={() => {
+                          // Handle buy action
+                          handleCloseDialog();
+                        }}
+                      >
+                        Buy Now
+                      </Button>
                     </Box>
                   </Grid>
                 </Grid>
