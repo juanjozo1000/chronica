@@ -8,11 +8,13 @@ export interface BlockfrostAsset {
   fingerprint: string;
   quantity: string;
   initial_mint_tx_hash: string;
-  metadata?: {
+  mint_or_burn_count: number;
+  onchain_metadata?: {
     title?: string;
     minting_timestamp?: string;
     entries?: string[];
     image?: string;
+    media?: string;
     media_type?: string;
     authority_type?: string;
     tags?: string[];
@@ -20,6 +22,9 @@ export interface BlockfrostAsset {
     event_timestamp?: string;
     geo_location?: string;
   };
+  onchain_metadata_standard?: any;
+  onchain_metadata_extra?: any;
+  metadata?: any;
 }
 
 export const fetchPolicyAssets = async (): Promise<BlockfrostAsset[]> => {
@@ -39,9 +44,10 @@ export const fetchPolicyAssets = async (): Promise<BlockfrostAsset[]> => {
     }
     throw new Error("Failed to fetch policy assets");
   }
-
-  const assets = await response.json();
-
+  // Remove asset c6a87a1e40f3b63a1b46f3651e37ca872f32caf099b4a78662c9a8584d696e7454657374
+  let assets = await response.json();
+  const filteredAssets = assets.filter((asset: BlockfrostAsset) => asset.asset !== "c6a87a1e40f3b63a1b46f3651e37ca872f32caf099b4a78662c9a8584d696e7454657374");
+  assets = filteredAssets;
   // If no assets returned, return empty array
   if (!assets || assets.length === 0) {
     return [];
@@ -64,10 +70,10 @@ export const fetchPolicyAssets = async (): Promise<BlockfrostAsset[]> => {
           throw new Error(`Failed to fetch metadata for asset ${asset.asset}`);
         }
 
-        const metadata = await metadataResponse.json();
+        const assetDetails = await metadataResponse.json();
         return {
           ...asset,
-          metadata: metadata.onchain_metadata || {},
+          ...assetDetails,
         };
       } catch (error) {
         console.error(
