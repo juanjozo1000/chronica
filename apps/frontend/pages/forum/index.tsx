@@ -48,6 +48,8 @@ interface LocationInfo {
   city: string;
 }
 
+const IPFS_MEDIA_BASE_URL="https://c-ipfs-gw.nmkr.io/ipfs/"
+
 export default function Forum() {
   const { assets, loading, error } = useBlockfrostAssets();
   const [selectedAsset, setSelectedAsset] = useState<any>(null);
@@ -236,7 +238,7 @@ export default function Forum() {
                   onClick={() => handleBuyClick(asset)}
                 >
                   <EmptyCard
-                    imageUrl={asset.onchain_metadata?.image}
+                    imageUrl={IPFS_MEDIA_BASE_URL + asset.onchain_metadata?.image}
                     title={asset.onchain_metadata?.title || "Untitled"}
                     description={
                       asset.onchain_metadata?.entries?.[0] || "No description available"

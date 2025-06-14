@@ -44,9 +44,10 @@ export const fetchPolicyAssets = async (): Promise<BlockfrostAsset[]> => {
     }
     throw new Error("Failed to fetch policy assets");
   }
-
-  const assets = await response.json();
-
+  // Remove asset c6a87a1e40f3b63a1b46f3651e37ca872f32caf099b4a78662c9a8584d696e7454657374
+  let assets = await response.json();
+  const filteredAssets = assets.filter((asset: BlockfrostAsset) => asset.asset !== "c6a87a1e40f3b63a1b46f3651e37ca872f32caf099b4a78662c9a8584d696e7454657374");
+  assets = filteredAssets;
   // If no assets returned, return empty array
   if (!assets || assets.length === 0) {
     return [];
