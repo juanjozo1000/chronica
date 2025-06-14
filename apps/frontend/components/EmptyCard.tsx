@@ -9,6 +9,7 @@ import {
   Box,
 } from "@mui/material";
 import { LocationOn } from "@mui/icons-material";
+import styled from "@emotion/styled";
 
 interface EmptyCardProps {
   imageUrl?: string;
@@ -19,6 +20,20 @@ interface EmptyCardProps {
   location?: string;
   isLoading?: boolean;
 }
+
+const StyledCard = styled(Card)(({ theme }) => ({
+  height: "100%",
+  display: "flex",
+  flexDirection: "column",
+  transition: "transform 0.2s ease-in-out",
+  minWidth: "300px",
+  maxWidth: "400px",
+  margin: "0 auto",
+  "&:hover": {
+    transform: "translateY(-4px)",
+    boxShadow: theme.shadows[4],
+  },
+}));
 
 export const EmptyCard = ({
   imageUrl,
@@ -58,7 +73,7 @@ export const EmptyCard = ({
   }
 
   return (
-    <Card sx={{ width: "100%", maxWidth: "400px", margin: "0 auto" }}>
+    <StyledCard>
       <CardMedia
         component="img"
         height="200"
@@ -113,6 +128,6 @@ export const EmptyCard = ({
           Buy
         </Button>
       </CardContent>
-    </Card>
+    </StyledCard>
   );
 };

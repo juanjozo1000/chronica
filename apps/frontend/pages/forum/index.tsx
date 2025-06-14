@@ -311,11 +311,11 @@ export default function Forum() {
                         color="text.secondary"
                         gutterBottom
                       >
-                        Description
+                        Context
                       </Typography>
                       <Typography variant="body1">
                         {selectedAsset.metadata?.description ||
-                          "No description available"}
+                          "No context available"}
                       </Typography>
                     </Box>
 
@@ -374,7 +374,7 @@ export default function Forum() {
                             <img
                               src="/credit-card.svg"
                               alt="Credit Card"
-                              style={{ width: 20, height: 20 }}
+                              style={{ width: 24, height: 16 }}
                             />
                           }
                         >
@@ -384,25 +384,25 @@ export default function Forum() {
                           variant="outlined"
                           startIcon={
                             <img
-                              src="/paypal.svg"
-                              alt="PayPal"
-                              style={{ width: 20, height: 20 }}
+                              src="/ada.svg"
+                              alt="ADA"
+                              style={{ width: 24, height: 24 }}
                             />
                           }
                         >
-                          PayPal
+                          ADA
                         </Button>
                         <Button
                           variant="outlined"
                           startIcon={
                             <img
-                              src="/crypto.svg"
-                              alt="Crypto"
-                              style={{ width: 20, height: 20 }}
+                              src="/usdm.svg"
+                              alt="USDM"
+                              style={{ width: 24, height: 24 }}
                             />
                           }
                         >
-                          Crypto
+                          USDM
                         </Button>
                       </Stack>
                     </Box>
