@@ -66,7 +66,7 @@ export default function Forum() {
   const uniqueTags = useMemo(() => {
     const tags = new Set<string>();
     assets.forEach((asset) => {
-      asset.metadata?.tags?.forEach((tag: string) => tags.add(tag));
+      asset.onchain_metadata?.tags?.forEach((tag: string) => tags.add(tag));
     });
     return Array.from(tags).sort();
   }, [assets]);
@@ -88,12 +88,11 @@ export default function Forum() {
   };
 
   const filteredAssets = assets.filter((asset) => {
-    const metadata = asset.metadata || {};
+    const metadata = asset.onchain_metadata || {};
     return (
-      (!filters.date || metadata.date?.includes(filters.date)) &&
-      (!filters.tag || metadata.tags?.includes(filters.tag)) &&
-      (!filters.country || metadata.location?.country === filters.country) &&
-      (!filters.city || metadata.location?.city === filters.city)
+      (!filters.date || metadata.minting_timestamp?.includes(filters.date)) &&
+      (!filters.tag || metadata.tags?.includes(filters.tag))
+      // Note: country/city filtering would need to be implemented with geocoding from geo_location
     );
   });
 
@@ -103,21 +102,26 @@ export default function Forum() {
 
       for (const asset of assets) {
         console.log("Processing asset:", asset.asset);
-        console.log("Asset metadata:", asset.metadata);
+        console.log("Asset onchain_metadata:", asset.onchain_metadata);
 
-        if (asset.metadata?.gps_latitude && asset.metadata?.gps_longitude) {
-          console.log("Found GPS coordinates:", {
-            latitude: asset.metadata.gps_latitude,
-            longitude: asset.metadata.gps_longitude,
-          });
+        if (asset.onchain_metadata?.geo_location) {
+          const geoCoords = asset.onchain_metadata.geo_location.split(', ');
+          if (geoCoords.length === 2) {
+            const latitude = parseFloat(geoCoords[0]);
+            const longitude = parseFloat(geoCoords[1]);
+            
+            console.log("Found GPS coordinates:", {
+              latitude,
+              longitude,
+            });
 
-          const location = await getLocationFromCoordinates(
-            asset.metadata.gps_latitude,
-            asset.metadata.gps_longitude
-          );
-          newLocationInfo[asset.asset] = location;
+            const location = await getLocationFromCoordinates(latitude, longitude);
+            newLocationInfo[asset.asset] = location;
+          } else {
+            console.log("Invalid geo_location format for asset:", asset.asset);
+          }
         } else {
-          console.log("No GPS coordinates found for asset:", asset.asset);
+          console.log("No geo_location found for asset:", asset.asset);
         }
       }
 
@@ -232,19 +236,19 @@ export default function Forum() {
                   onClick={() => handleBuyClick(asset)}
                 >
                   <EmptyCard
-                    imageUrl={asset.metadata?.image}
-                    title={asset.metadata?.title || "Untitled"}
+                    imageUrl={asset.onchain_metadata?.image}
+                    title={asset.onchain_metadata?.title || "Untitled"}
                     description={
-                      asset.metadata?.description || "No description available"
+                      asset.onchain_metadata?.entries?.[0] || "No description available"
                     }
-                    price={asset.metadata?.price || 100}
-                    tags={asset.metadata?.tags || []}
+                    price={100} // Default price since it's not in onchain_metadata
+                    tags={asset.onchain_metadata?.tags || []}
                     location={
                       locationInfo[asset.asset]
                         ? `${locationInfo[asset.asset].city}, ${
                             locationInfo[asset.asset].country
                           }`
-                        : "Location unknown"
+                        : asset.onchain_metadata?.geo_location || "Location unknown"
                     }
                   />
                 </Box>
@@ -268,7 +272,7 @@ export default function Forum() {
                 alignItems="center"
               >
                 <Typography variant="h5">
-                  {selectedAsset.metadata?.title || "Untitled"}
+                  {selectedAsset.onchain_metadata?.title || "Untitled"}
                 </Typography>
                 <IconButton onClick={handleCloseDialog}>
                   <CloseIcon />
@@ -281,8 +285,8 @@ export default function Forum() {
                   <Grid item xs={12} md={6}>
                     <Box
                       component="img"
-                      src={selectedAsset.metadata?.image}
-                      alt={selectedAsset.metadata?.title || "Asset image"}
+                      src={selectedAsset.onchain_metadata?.image}
+                      alt={selectedAsset.onchain_metadata?.title || "Asset image"}
                       sx={{
                         width: "100%",
                         height: "auto",
@@ -291,10 +295,10 @@ export default function Forum() {
                       }}
                     />
                     <Typography variant="h6" gutterBottom>
-                      €{selectedAsset.metadata?.price || 100}
+                      €100 {/* Default price since it's not in onchain_metadata */}
                     </Typography>
                     <Box sx={{ mb: 2 }}>
-                      {selectedAsset.metadata?.tags?.map((tag: string) => (
+                      {selectedAsset.onchain_metadata?.tags?.map((tag: string) => (
                         <Chip
                           key={tag}
                           label={tag}
@@ -314,7 +318,7 @@ export default function Forum() {
                         Description
                       </Typography>
                       <Typography variant="body1">
-                        {selectedAsset.metadata?.description ||
+                        {selectedAsset.onchain_metadata?.entries?.[0] ||
                           "No description available"}
                       </Typography>
                     </Box>
@@ -336,7 +340,7 @@ export default function Forum() {
                           ? `${locationInfo[selectedAsset.asset].city}, ${
                               locationInfo[selectedAsset.asset].country
                             }`
-                          : "Location unknown"}
+                          : selectedAsset.onchain_metadata?.geo_location || "Location unknown"}
                       </Typography>
                     </Box>
 
@@ -356,6 +360,12 @@ export default function Forum() {
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
                         Fingerprint: {selectedAsset.fingerprint}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Minting Date: {selectedAsset.onchain_metadata?.minting_timestamp}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Culture: {selectedAsset.onchain_metadata?.culture}
                       </Typography>
                     </Box>
 
