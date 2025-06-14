@@ -112,6 +112,7 @@ export default function Forum() {
   const filteredAssets = assets.filter((asset) => {
     const metadata = asset.onchain_metadata || {};
     const assetLocation = locationInfo[asset.asset];
+    console.log(asset.onchain_metadata);
     
     // Date filter - transform date input (YYYY-MM-DD) to match minting_timestamp format (YYYY-MM-DD_HH-MM-SS)
     const dateMatch = !filters.date || 

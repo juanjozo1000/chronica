@@ -107,6 +107,8 @@ export default async function handler(
       TOKEN: nmkrConfig.apiKey,
     })
 
+    console.log('NMKR client initialized in environment:', process.env.ENVIRONMENT)
+
     // Put QR of pool url into the image
     const time = new Date()
     const asset_name = createUniqueAssetName(title, time)
