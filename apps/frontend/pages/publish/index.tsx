@@ -298,6 +298,20 @@ export default function MediaCapturePage() {
     }));
   }, []);
 
+  const handleGetPayoutWallets = useCallback(async () => {
+    try {
+      console.log('Fetching payout wallets...');
+      const response = await fetch('/api/nmkr/get-payout-wallets', {
+        method: 'GET',
+      });
+      
+      const result = await response.json();
+      console.log('Payout wallets result:', result);
+    } catch (error) {
+      console.error('Error fetching payout wallets:', error);
+    }
+  }, []);
+
   const handleSubmit = useCallback(async () => {
     if (!mediaData.mediaBlob) return;
 
@@ -306,57 +320,43 @@ export default function MediaCapturePage() {
     setSubmitSuccess(false);
 
     try {
-      // Convert blob to base64 for API submission
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        try {
-          const base64data = reader.result as string;
-          const base64 = base64data.split(",")[1]; // Remove data:image/jpeg;base64, prefix
+      // Create FormData to send file and form data together
+      const formData = new FormData();
+      
+      // Add the media file
+      formData.append('media', mediaData.mediaBlob, `media.${mediaData.mediaType === 'photo' ? 'jpg' : 'webm'}`);
+      
+      // Add form fields
+      formData.append('title', mediaData.title);
+      formData.append('description', mediaData.context);
+      formData.append('eventTimestamp', new Date().toISOString());
+      formData.append('geoLocation', mediaData.location.address || '');
+      formData.append('tags', JSON.stringify(mediaData.tags));
+      formData.append('culture', mediaData.culture);
 
-          const requestData = {
-            title: mediaData.title,
-            description: mediaData.context,
-            fileBase64: base64,
-            mimetype:
-              mediaData.mediaType === "photo" ? "image/jpeg" : "video/webm",
-            eventTimestamp: new Date().toISOString(),
-            geoLocation: mediaData.location.address || "",
-            tags: mediaData.tags,
-            culture: mediaData.culture,
-          };
+      const response = await fetch('/api/nmkr/create-nft', {
+        method: 'POST',
+        body: formData, // Don't set Content-Type header, let browser set it with boundary
+      });
 
-          const response = await fetch("/api/nmkr/create-nft", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(requestData),
-          });
-
-          const result = await response.json();
-
-          if (result.success) {
-            setSubmitSuccess(true);
-            console.log("NFT Result:", result);
-            // Reset form after successful submission
-            setTimeout(() => {
-              deleteMedia();
-              setSubmitSuccess(false);
-            }, 3000);
-          } else {
-            setSubmitError(result.error || "Failed to create NFT");
-          }
-        } catch (error) {
-          console.error("Error processing media:", error);
-          setSubmitError("Error processing media file");
-        } finally {
-          setIsSubmitting(false);
-        }
-      };
-      reader.readAsDataURL(mediaData.mediaBlob);
+      const result = await response.json();
+      
+      if (result.success) {
+        setSubmitSuccess(true);
+        console.log('NFT Result:', result);
+        console.log('IPFS Hash:', result.data?.ipfsHash);
+        // Reset form after successful submission
+        setTimeout(() => {
+          deleteMedia();
+          setSubmitSuccess(false);
+        }, 3000);
+      } else {
+        setSubmitError(result.error || 'Failed to create NFT');
+      }
     } catch (error) {
-      console.error("Error submitting media:", error);
-      setSubmitError("Error submitting media");
+      console.error('Error submitting media:', error);
+      setSubmitError('Error submitting media');
+    } finally {
       setIsSubmitting(false);
     }
   }, [mediaData, deleteMedia]);
@@ -789,6 +789,18 @@ export default function MediaCapturePage() {
                     </Typography>
                   </Box>
                 )}
+
+                {/* Quick Actions */}
+                <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
+                  <Button
+                    variant="text"
+                    size="small"
+                    onClick={handleGetPayoutWallets}
+                    sx={{ textTransform: 'none' }}
+                  >
+                    Get Payout Wallets
+                  </Button>
+                </Box>
 
                 {/* Action Buttons */}
                 <Stack direction="row" spacing={2} sx={{ pt: 2 }}>

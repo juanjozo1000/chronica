@@ -1,7 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import { NMKRClient } from 'nmkr-studio-api'
 import { nmkrConfig, validateNmkrConfig } from '../../../lib/nmkr-config'
-import { createCip25Metadata } from '../../../utils/metadata-builder'
+import { createCip25Metadata, createUniqueAssetName } from '../../../utils/metadata-builder'
 import formidable from 'formidable'
 import fs from 'fs'
 
@@ -138,7 +138,8 @@ export default async function handler(
 
     // Remove ipfs:// prefix if present
     const ipfsHash = ipfsHashFromResult.startsWith('ipfs://') ? ipfsHashFromResult.replace('ipfs://', '') : ipfsHashFromResult
-
+    const time = new Date()
+    const asset_name = createUniqueAssetName(title, time)
     // Create CIP-25 compliant metadata
     const cip25Metadata = createCip25Metadata({
       title: title,
@@ -150,7 +151,9 @@ export default async function handler(
       tags: tags,
       culture: culture
     },
-    ipfsHashFromResult
+    asset_name,
+    ipfsHashFromResult,
+    time
   )
 
     // Prepare the NFT file object using IPFS hash
@@ -164,7 +167,7 @@ export default async function handler(
     // Prepare the upload request
     const uploadRequest = {
       projectuid: nmkrConfig.projectUid,
-      tokenname: title,
+      tokenname: asset_name,
       displayname: title || null,
       description: description || null,
       previewImageNft: previewImageNft,
@@ -174,6 +177,7 @@ export default async function handler(
 
     console.log('Creating NFT with NMKR Studio API:', {
       projectUid: nmkrConfig.projectUid,
+      asset_name: asset_name,
       title: title,
       ipfsHash: ipfsHash,
       hasMetadata: !!cip25Metadata,
@@ -189,6 +193,30 @@ export default async function handler(
 
     // Clean up uploaded file
     fs.unlinkSync(mediaFile.filepath)
+
+    // Mint the NFT if environment variable is set and receiver address is provided
+    if (process.env.MINT_NFTS && result.nftUid) {
+      console.log('Minting NFT...', {
+        projectuid: nmkrConfig.projectUid,
+        nftuid: result.nftUid,
+        receiveraddress: nmkrConfig.receiverAddress
+      })
+
+      const mintResult = await nmkrClient.mint.postV2MintAndSendSpecific({
+        projectuid: nmkrConfig.projectUid as string,
+        receiveraddress: nmkrConfig.receiverAddress as string,
+        requestBody: {
+          reserveNfts: [
+            {
+              nftUid: result.nftUid as string,
+              tokencount: 1,
+            }
+          ]
+        }
+      })
+
+      console.log('Mint result:', mintResult)
+    }
 
     // Return success response
     res.status(200).json({
