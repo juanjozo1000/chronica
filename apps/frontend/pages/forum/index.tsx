@@ -207,7 +207,7 @@ const Forum = () => {
                       {asset.metadata?.name || "Untitled Asset"}
                     </Typography>
                     <Typography variant="h6" color="primary">
-                      €{asset.metadata?.price || 0}
+                      €{asset.metadata?.price || 100}
                     </Typography>
                     <Stack
                       direction="row"
@@ -258,7 +258,7 @@ const Forum = () => {
                 {selectedAsset.metadata?.name || "Untitled Asset"}
               </Typography>
               <Typography variant="body1" paragraph>
-                Price: €{selectedAsset.metadata?.price || 0}
+                Price: €{selectedAsset.metadata?.price || 100}
               </Typography>
               <Typography variant="subtitle1" gutterBottom>
                 Asset Details:
