@@ -4,13 +4,10 @@ import { CreateNftRequest, CreateNftResponse } from './api/nmkr/create-nft'
 
 export default function CreateNft() {
   const [formData, setFormData] = useState<CreateNftRequest>({
-    projectUid: '',
-    tokenName: '',
-    displayName: '',
+    title: '',
     description: '',
     fileUrl: '',
-    mimetype: 'image/png',
-    priceInLovelace: 0,
+    mimetype: 'image/png'
   })
   
   const [loading, setLoading] = useState(false)
@@ -20,7 +17,7 @@ export default function CreateNft() {
     const { name, value } = e.target
     setFormData(prev => ({
       ...prev,
-      [name]: name === 'priceInLovelace' ? parseInt(value) || 0 : value
+      [name]: value
     }))
   }
 
@@ -67,26 +64,14 @@ export default function CreateNft() {
 
           <div className="form-container">
             <form onSubmit={handleSubmit} className="nft-form">
-              <div className="form-group">
-                <label htmlFor="projectUid">Project UID *</label>
-                <input
-                  type="text"
-                  id="projectUid"
-                  name="projectUid"
-                  value={formData.projectUid}
-                  onChange={handleInputChange}
-                  required
-                  placeholder="Enter your NMKR project UID"
-                />
-              </div>
 
               <div className="form-group">
-                <label htmlFor="tokenName">Token Name *</label>
+                <label htmlFor="title">Token Name *</label>
                 <input
                   type="text"
-                  id="tokenName"
-                  name="tokenName"
-                  value={formData.tokenName}
+                  id="title"
+                  name="title"
+                  value={formData.title}
                   onChange={handleInputChange}
                   required
                   placeholder="Enter token name"
@@ -99,7 +84,7 @@ export default function CreateNft() {
                   type="text"
                   id="displayName"
                   name="displayName"
-                  value={formData.displayName as string}
+                  value={formData.title as string}
                   onChange={handleInputChange}
                   placeholder="Enter display name (optional)"
                 />
@@ -139,19 +124,6 @@ export default function CreateNft() {
                   value={formData.mimetype as string}
                   onChange={handleInputChange}
                   placeholder="image/png"
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="priceInLovelace">Price (Lovelace)</label>
-                <input
-                  type="number"
-                  id="priceInLovelace"
-                  name="priceInLovelace"
-                  value={formData.priceInLovelace as number}
-                  onChange={handleInputChange}
-                  min="0"
-                  placeholder="0"
                 />
               </div>
 
