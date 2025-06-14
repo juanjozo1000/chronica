@@ -90,6 +90,9 @@ export default function MediaCapturePage() {
   const [newTag, setNewTag] = useState('')
   const [locationPermission, setLocationPermission] = useState<'granted' | 'denied' | 'prompt'>('prompt')
   const [isLoadingLocation, setIsLoadingLocation] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
+  const [submitSuccess, setSubmitSuccess] = useState<boolean>(false)
 
   const videoRef = useRef<HTMLVideoElement>(null)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
@@ -292,46 +295,62 @@ export default function MediaCapturePage() {
   const handleSubmit = useCallback(async () => {
     if (!mediaData.mediaBlob) return
 
+    setIsSubmitting(true)
+    setSubmitError(null)
+    setSubmitSuccess(false)
+
     try {
       // Convert blob to base64 for API submission
       const reader = new FileReader()
       reader.onloadend = async () => {
-        const base64data = reader.result as string
-        const base64 = base64data.split(',')[1] // Remove data:image/jpeg;base64, prefix
+        try {
+          const base64data = reader.result as string
+          const base64 = base64data.split(',')[1] // Remove data:image/jpeg;base64, prefix
 
-        const requestData = {
-          title: mediaData.title,
-          description: mediaData.context,
-          fileBase64: base64,
-          mimetype: mediaData.mediaType === 'photo' ? 'image/jpeg' : 'video/webm',
-          eventTimestamp: new Date().toISOString(),
-          geoLocation: mediaData.location.address || '',
-          tags: mediaData.tags,
-          culture: mediaData.culture,
-        }
+          const requestData = {
+            title: mediaData.title,
+            description: mediaData.context,
+            fileBase64: base64,
+            mimetype: mediaData.mediaType === 'photo' ? 'image/jpeg' : 'video/webm',
+            eventTimestamp: new Date().toISOString(),
+            geoLocation: mediaData.location.address || '',
+            tags: mediaData.tags,
+            culture: mediaData.culture,
+          }
 
-        const response = await fetch('/api/nmkr/create-nft', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(requestData),
-        })
+          const response = await fetch('/api/nmkr/create-nft', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestData),
+          })
 
-        const result = await response.json()
-        
-        if (result.success) {
-          alert('NFT created successfully!')
-          console.log('NFT Result:', result)
-          deleteMedia()
-        } else {
-          alert(`Error creating NFT: ${result.error}`)
+          const result = await response.json()
+          
+          if (result.success) {
+            setSubmitSuccess(true)
+            console.log('NFT Result:', result)
+            // Reset form after successful submission
+            setTimeout(() => {
+              deleteMedia()
+              setSubmitSuccess(false)
+            }, 3000)
+          } else {
+            setSubmitError(result.error || 'Failed to create NFT')
+          }
+        } catch (error) {
+          console.error('Error processing media:', error)
+          setSubmitError('Error processing media file')
+        } finally {
+          setIsSubmitting(false)
         }
       }
       reader.readAsDataURL(mediaData.mediaBlob)
     } catch (error) {
       console.error('Error submitting media:', error)
-      alert('Error submitting media')
+      setSubmitError('Error submitting media')
+      setIsSubmitting(false)
     }
   }, [mediaData, deleteMedia])
 
@@ -684,11 +703,38 @@ export default function MediaCapturePage() {
                   )}
                 </Box>
 
+                {/* Success/Error Messages */}
+                {submitSuccess && (
+                  <Alert severity="success" sx={{ mb: 2 }}>
+                    NFT created successfully! The form will reset in a moment.
+                  </Alert>
+                )}
+                {submitError && (
+                  <Alert 
+                    severity="error" 
+                    sx={{ mb: 2 }}
+                    onClose={() => setSubmitError(null)}
+                  >
+                    {submitError}
+                  </Alert>
+                )}
+
+                {/* Loading Progress */}
+                {isSubmitting && (
+                  <Box sx={{ mb: 2 }}>
+                    <LinearProgress />
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1, textAlign: 'center' }}>
+                      Creating NFT...
+                    </Typography>
+                  </Box>
+                )}
+
                 {/* Action Buttons */}
                 <Stack direction="row" spacing={2} sx={{ pt: 2 }}>
                   <Button
                     variant="outlined"
                     onClick={() => setMode('preview')}
+                    disabled={isSubmitting}
                     sx={{ flex: 1 }}
                   >
                     Back
@@ -696,10 +742,10 @@ export default function MediaCapturePage() {
                   <Button
                     variant="contained"
                     onClick={handleSubmit}
-                    disabled={!mediaData.title || !mediaData.context}
+                    disabled={!mediaData.title || !mediaData.context || isSubmitting || submitSuccess}
                     sx={{ flex: 1 }}
                   >
-                    Create NFT
+                    {isSubmitting ? 'Creating NFT...' : submitSuccess ? 'NFT Created!' : 'Create NFT'}
                   </Button>
                 </Stack>
               </Stack>
