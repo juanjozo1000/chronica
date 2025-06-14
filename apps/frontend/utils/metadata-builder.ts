@@ -48,7 +48,8 @@ export function createCip25Metadata(params: CreateNftRequest): Cip25Metadata {
     "721": {
       [nmkrConfig.policyId as string]: {
         [asset_name]: nftMetadata
-      }
+      },
+      // "version": "1.0"
     }
   }
 }

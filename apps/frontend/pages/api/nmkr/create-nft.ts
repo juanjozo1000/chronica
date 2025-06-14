@@ -1,9 +1,15 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import { NMKRClient } from 'nmkr-studio-api'
 import { nmkrConfig, validateNmkrConfig } from '../../../lib/nmkr-config'
-
-import { CreateMetadataParams } from '../../../types/nft-metadata'
 import { createCip25Metadata } from '../../../utils/metadata-builder'
+import formidable from 'formidable'
+import fs from 'fs'
+
+export const config = {
+  api: {
+    bodyParser: false, // Disable default body parsing for file uploads
+  },
+}
 
 export interface CreateNftRequest {
   title: string
@@ -26,8 +32,27 @@ export interface CreateNftResponse {
     ipfsHashMainnft?: string | null
     assetId?: string | null
     metadata?: string | null
+    ipfsHash?: string | null
   }
   error?: string
+}
+
+// Helper function to parse multipart/form-data
+function parseFormData(req: NextApiRequest): Promise<{ fields: formidable.Fields; files: formidable.Files }> {
+  return new Promise((resolve, reject) => {
+    const form = formidable({
+      maxFileSize: 50 * 1024 * 1024, // 50MB limit
+      keepExtensions: true,
+    })
+
+    form.parse(req, (err, fields, files) => {
+      if (err) {
+        reject(err)
+      } else {
+        resolve({ fields, files })
+      }
+    })
+  })
 }
 
 export default async function handler(
@@ -45,26 +70,32 @@ export default async function handler(
     // Validate NMKR configuration
     validateNmkrConfig()
 
-    // Extract data from request body
-    const {
-      title,
-      description,
-      fileBase64,
-      fileUrl,
-      ipfsHash,
-      mimetype,
-      eventTimestamp,
-      geoLocation,
-      tags,
-      culture,
-    }: CreateNftRequest = req.body
+    // Parse multipart/form-data
+    const { fields, files } = await parseFormData(req)
 
-   
-    // Validate that at least one file source is provided
-    if (!fileBase64 && !fileUrl && !ipfsHash) {
+    // Extract form fields
+    const title = Array.isArray(fields.title) ? fields.title[0] : fields.title
+    const description = Array.isArray(fields.description) ? fields.description[0] : fields.description
+    const eventTimestamp = Array.isArray(fields.eventTimestamp) ? fields.eventTimestamp[0] : fields.eventTimestamp
+    const geoLocation = Array.isArray(fields.geoLocation) ? fields.geoLocation[0] : fields.geoLocation
+    const culture = Array.isArray(fields.culture) ? fields.culture[0] : fields.culture
+    const tagsString = Array.isArray(fields.tags) ? fields.tags[0] : fields.tags
+    const tags = tagsString ? JSON.parse(tagsString) : []
+
+    // Extract uploaded file
+    const mediaFile = Array.isArray(files.media) ? files.media[0] : files.media
+
+    if (!mediaFile) {
       return res.status(400).json({
         success: false,
-        error: 'At least one file source (fileBase64, fileUrl, or ipfsHash) is required'
+        error: 'Media file is required'
+      })
+    }
+
+    if (!title) {
+      return res.status(400).json({
+        success: false,
+        error: 'Title is required'
       })
     }
 
@@ -74,75 +105,88 @@ export default async function handler(
       TOKEN: nmkrConfig.apiKey,
     })
 
-    // Prepare the NFT file object (convert undefined to null for NMKR API)
-    const previewImageNft = {
-      mimetype: mimetype || 'image/png',
-      fileFromBase64: fileBase64 || null,
-      fileFromsUrl: fileUrl || null,
-      fileFromIPFS: ipfsHash || null,
-    }
-
-    // Create CIP-25 compliant metadata if provided
-    let metadataOverride = null
-    
-    
-      // Determine the media IPFS hash from the file inputs
-    let mediaIpfsHash = ''
-    if (ipfsHash) {
-        mediaIpfsHash = ipfsHash
-    }
-    else if (fileUrl && fileUrl.includes('ipfs://')) {
-        mediaIpfsHash = fileUrl
-    } else {
-    // For now, we'll use a placeholder - in real implementation,
-    // you'd upload to IPFS first and get the hash
-        mediaIpfsHash = 'ipfs://QmPlaceholderHash'
-    }
-
-    const cip25Metadata = createCip25Metadata({
-        title: title,
-        description: description,
-        fileBase64: fileBase64,
-        fileUrl: fileUrl,
-        ipfsHash: ipfsHash,
-        mimetype: mimetype,
-        eventTimestamp: eventTimestamp,
-        geoLocation: geoLocation,
-        tags: tags,
-        culture: culture
+    // Upload file to IPFS
+    console.log('Uploading file to IPFS...', {
+      originalFilename: mediaFile.originalFilename,
+      mimetype: mediaFile.mimetype,
+      size: mediaFile.size
     })
+
+    // Read file content
+    const fileBuffer = fs.readFileSync(mediaFile.filepath)
+    const fileBase64 = fileBuffer.toString('base64')
+
+    // Upload to IPFS using NMKR client
+    // Note: We need to provide a customerid. For simplicity, we'll use 1 as default customer ID
+    // In production, you might want to get this from your account or config
+    const ipfsResult = await nmkrClient.ipfs.postV2UploadToIpfs({
+      customerid: 190334, // Default customer ID - you may need to adjust this
+      requestBody: {
+        fileFromBase64: fileBase64,
+        mimetype: mediaFile.mimetype || 'application/octet-stream',
+      }
+    })
+
+    console.log('IPFS upload result:', ipfsResult)
+
+    // Handle the IPFS result - it should be a string containing the IPFS hash
+    const ipfsHashFromResult = String(ipfsResult)
     
-    metadataOverride = cip25Metadata
+    if (!ipfsHashFromResult) {
+      throw new Error('Failed to upload to IPFS - no hash returned')
+    }
 
+    // Remove ipfs:// prefix if present
+    const ipfsHash = ipfsHashFromResult.startsWith('ipfs://') ? ipfsHashFromResult.replace('ipfs://', '') : ipfsHashFromResult
 
-    // Prepare the upload request (convert undefined to null for NMKR API)
+    // Create CIP-25 compliant metadata
+    const cip25Metadata = createCip25Metadata({
+      title: title,
+      description: description,
+      ipfsHash: ipfsHash,
+      mimetype: mediaFile.mimetype,
+      eventTimestamp: eventTimestamp,
+      geoLocation: geoLocation,
+      tags: tags,
+      culture: culture
+    })
+
+    // Prepare the NFT file object using IPFS hash
+    const previewImageNft = {
+      mimetype: mediaFile.mimetype || 'application/octet-stream',
+      fileFromBase64: null,
+      fileFromsUrl: null,
+      fileFromIPFS: ipfsHash,
+    }
+
+    // Prepare the upload request
     const uploadRequest = {
       projectuid: nmkrConfig.projectUid,
       tokenname: title,
       displayname: title || null,
       description: description || null,
       previewImageNft: previewImageNft,
-      metadataOverride: metadataOverride ? JSON.stringify(metadataOverride) : null,
+      metadataOverride: JSON.stringify(cip25Metadata),
       isBlocked: false,
     }
 
     console.log('Creating NFT with NMKR Studio API:', {
       projectUid: nmkrConfig.projectUid,
       title: title,
-      hasFileBase64: !!fileBase64,
-      hasFileUrl: !!fileUrl,
-      hasIpfsHash: !!ipfsHash,
-      hasMetadata: !!metadataOverride,
-      metadataPreview: metadataOverride ? JSON.stringify(metadataOverride, null, 2) : null,
+      ipfsHash: ipfsHash,
+      hasMetadata: !!cip25Metadata,
     })
 
-    // Call NMKR Studio API
+    // Call NMKR Studio API to create NFT
     const result = await nmkrClient.nft.postV2UploadNft({
       projectuid: nmkrConfig.projectUid as string,
       requestBody: uploadRequest,
     })
 
     console.log('NMKR Studio API response:', result)
+
+    // Clean up uploaded file
+    fs.unlinkSync(mediaFile.filepath)
 
     // Return success response
     res.status(200).json({
@@ -153,6 +197,7 @@ export default async function handler(
         ipfsHashMainnft: result.ipfsHashMainnft,
         assetId: result.assetId,
         metadata: result.metadata,
+        ipfsHash: ipfsHash,
       },
     })
 

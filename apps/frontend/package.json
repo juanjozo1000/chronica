@@ -16,8 +16,12 @@
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
+    "@emurgo/cardano-serialization-lib-nodejs": "^14.1.2",
+    "@emurgo/cip14-js": "^3.0.1",
     "@mui/icons-material": "^7.1.1",
     "@mui/material": "^7.1.1",
+    "@types/formidable": "^3.4.5",
+    "formidable": "^3.5.4",
     "next": "^14.0.4",
     "nmkr-studio-api": "^1.0.33",
     "react": "^18.2.0",
