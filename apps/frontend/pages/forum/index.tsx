@@ -69,6 +69,15 @@ const Forum = () => {
     city: "",
   });
 
+  // Get unique tags from all assets
+  const uniqueTags = React.useMemo(() => {
+    const tags = new Set<string>();
+    assets.forEach((asset) => {
+      asset.metadata?.tags?.forEach((tag: string) => tags.add(tag));
+    });
+    return Array.from(tags).sort();
+  }, [assets]);
+
   const handleBuyClick = (asset: any) => {
     setSelectedAsset(asset);
     setOpenDialog(true);
@@ -138,17 +147,21 @@ const Forum = () => {
               onChange={handleFilterChange("date")}
             />
           </Grid>
-          <Grid item xs={12} sm={6} md={2}>
+          <Grid item xs={12} sm={6} md={3}>
             <FormControl fullWidth>
               <InputLabel>Tag</InputLabel>
               <Select
                 value={filters.tag}
                 label="Tag"
                 onChange={handleFilterChange("tag")}
+                sx={{ minWidth: "200px" }}
               >
                 <MenuItem value="">All</MenuItem>
-                <MenuItem value="news">News</MenuItem>
-                <MenuItem value="sports">Sports</MenuItem>
+                {uniqueTags.map((tag) => (
+                  <MenuItem key={tag} value={tag}>
+                    {tag}
+                  </MenuItem>
+                ))}
               </Select>
             </FormControl>
           </Grid>
