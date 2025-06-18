@@ -75,6 +75,24 @@ export default function Forum() {
     return Array.from(tags).sort();
   }, [assets]);
 
+  // Get unique countries from location info
+  const uniqueCountries = useMemo(() => {
+    const countries = new Set<string>();
+    Object.values(locationInfo).forEach((location) => {
+      if (location?.country) countries.add(location.country);
+    });
+    return Array.from(countries).sort();
+  }, [locationInfo]);
+
+  // Get unique cities from location info
+  const uniqueCities = useMemo(() => {
+    const cities = new Set<string>();
+    Object.values(locationInfo).forEach((location) => {
+      if (location?.city) cities.add(location.city);
+    });
+    return Array.from(cities).sort();
+  }, [locationInfo]);
+
   const handleBuyClick = (asset: any) => {
     setSelectedAsset(asset);
     setOpenDialog(true);
@@ -93,11 +111,26 @@ export default function Forum() {
 
   const filteredAssets = assets.filter((asset) => {
     const metadata = asset.onchain_metadata || {};
-    return (
-      (!filters.date || metadata.minting_timestamp?.includes(filters.date)) &&
-      (!filters.tag || metadata.tags?.includes(filters.tag))
-      // Note: country/city filtering would need to be implemented with geocoding from geo_location
-    );
+    const assetLocation = locationInfo[asset.asset];
+    console.log(asset.onchain_metadata);
+    
+    // Date filter - transform date input (YYYY-MM-DD) to match minting_timestamp format (YYYY-MM-DD_HH-MM-SS)
+    const dateMatch = !filters.date || 
+      metadata.minting_timestamp?.startsWith(filters.date);
+    
+    // Tag filter - check if the selected tag is in the asset's tags
+    const tagMatch = !filters.tag || 
+      metadata.tags?.includes(filters.tag);
+    
+    // Country filter - exact match with geocoded country
+    const countryMatch = !filters.country || 
+      assetLocation?.country === filters.country;
+    
+    // City filter - exact match with geocoded city
+    const cityMatch = !filters.city || 
+      assetLocation?.city === filters.city;
+    
+    return dateMatch && tagMatch && countryMatch && cityMatch;
   });
 
   useEffect(() => {
@@ -176,14 +209,21 @@ export default function Forum() {
       {/* Filters */}
       <Box sx={{ mb: 4 }}>
         <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
-          <Box sx={{ flex: "1 1 200px", minWidth: "200px" }}>
-            <TextField
-              fullWidth
-              label="Date"
-              value={filters.date}
-              onChange={handleFilterChange("date")}
-            />
-          </Box>
+                     <Box sx={{ flex: "1 1 200px", minWidth: "200px" }}>
+             <TextField
+               fullWidth
+               label="Date"
+               type="date"
+               value={filters.date}
+               onChange={handleFilterChange("date")}
+               InputLabelProps={{
+                 shrink: true,
+               }}
+               inputProps={{
+                 max: new Date().toISOString().split('T')[0], // Don't allow future dates
+               }}
+             />
+           </Box>
           <Box sx={{ flex: "1 1 300px", minWidth: "200px" }}>
             <FormControl fullWidth>
               <InputLabel>Tag</InputLabel>
@@ -202,22 +242,40 @@ export default function Forum() {
               </Select>
             </FormControl>
           </Box>
-          <Box sx={{ flex: "1 1 200px", minWidth: "200px" }}>
-            <TextField
-              fullWidth
-              label="Country"
-              value={filters.country}
-              onChange={handleFilterChange("country")}
-            />
-          </Box>
-          <Box sx={{ flex: "1 1 300px", minWidth: "200px" }}>
-            <TextField
-              fullWidth
-              label="City"
-              value={filters.city}
-              onChange={handleFilterChange("city")}
-            />
-          </Box>
+                     <Box sx={{ flex: "1 1 200px", minWidth: "200px" }}>
+             <FormControl fullWidth>
+               <InputLabel>Country</InputLabel>
+               <Select
+                 value={filters.country}
+                 label="Country"
+                 onChange={handleFilterChange("country")}
+               >
+                 <MenuItem value="">All</MenuItem>
+                 {uniqueCountries.map((country) => (
+                   <MenuItem key={country} value={country}>
+                     {country}
+                   </MenuItem>
+                 ))}
+               </Select>
+             </FormControl>
+           </Box>
+           <Box sx={{ flex: "1 1 300px", minWidth: "200px" }}>
+             <FormControl fullWidth>
+               <InputLabel>City</InputLabel>
+               <Select
+                 value={filters.city}
+                 label="City"
+                 onChange={handleFilterChange("city")}
+               >
+                 <MenuItem value="">All</MenuItem>
+                 {uniqueCities.map((city) => (
+                   <MenuItem key={city} value={city}>
+                     {city}
+                   </MenuItem>
+                 ))}
+               </Select>
+             </FormControl>
+           </Box>
         </Box>
       </Box>
 
@@ -228,57 +286,95 @@ export default function Forum() {
           flexWrap: "wrap",
           gap: 3,
           justifyContent: "center",
+          minHeight: "400px",
         }}
       >
-        {loading || error || filteredAssets.length === 0
-          ? Array.from(new Array(6)).map((_, index) => (
+        {loading ? (
+          // Show skeleton cards while loading
+          Array.from(new Array(6)).map((_, index) => (
+            <Box
+              key={index}
+              sx={{ flex: "1 1 250px", maxWidth: "280px", width: "100%" }}
+            >
+              <EmptyCard isLoading={true} />
+            </Box>
+          ))
+        ) : filteredAssets.length === 0 ? (
+          // Show "no results" message when filtering returns no matches
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              width: "100%",
+              py: 8,
+            }}
+          >
+            <Typography variant="h6" color="text.secondary" gutterBottom>
+              No assets found
+            </Typography>
+            <Typography variant="body2" color="text.secondary" align="center">
+              Try adjusting your filters or check back later for new content.
+            </Typography>
+            <Button
+              variant="outlined"
+              sx={{ mt: 2 }}
+              onClick={() => {
+                setFilters({
+                  date: "",
+                  tag: "",
+                  country: "",
+                  city: "",
+                });
+              }}
+            >
+              Clear All Filters
+            </Button>
+          </Box>
+        ) : (
+          // Show actual asset cards
+          filteredAssets.map((asset) => (
+            <Box
+              key={asset.asset}
+              sx={{ flex: "1 1 250px", maxWidth: "280px", width: "100%" }}
+            >
               <Box
-                key={index}
-                sx={{ flex: "1 1 250px", maxWidth: "280px", width: "100%" }}
+                sx={{
+                  position: "relative",
+                  cursor: "pointer",
+                  width: "100%",
+                  "&:hover": {
+                    transform: "scale(1.02)",
+                    transition: "transform 0.2s ease-in-out",
+                  },
+                }}
+                onClick={() => handleBuyClick(asset)}
               >
-                <EmptyCard isLoading={true} />
+                <EmptyCard
+                  imageUrl={
+                    IPFS_MEDIA_BASE_URL + asset.onchain_metadata?.image
+                  }
+                  title={asset.onchain_metadata?.title || "Untitled"}
+                  description={
+                    asset.onchain_metadata?.entries?.[0] ||
+                    "No description available"
+                  }
+                  price={100}
+                  tags={asset.onchain_metadata?.tags || []}
+                  location={
+                    locationInfo[asset.asset]
+                      ? `${locationInfo[asset.asset].city}, ${
+                          locationInfo[asset.asset].country
+                        }`
+                      : asset.onchain_metadata?.geo_location ||
+                        "Location unknown"
+                  }
+                />
               </Box>
-            ))
-          : filteredAssets.map((asset) => (
-              <Box
-                key={asset.asset}
-                sx={{ flex: "1 1 250px", maxWidth: "280px", width: "100%" }}
-              >
-                <Box
-                  sx={{
-                    position: "relative",
-                    cursor: "pointer",
-                    width: "100%",
-                    "&:hover": {
-                      transform: "scale(1.02)",
-                      transition: "transform 0.2s ease-in-out",
-                    },
-                  }}
-                  onClick={() => handleBuyClick(asset)}
-                >
-                  <EmptyCard
-                    imageUrl={
-                      IPFS_MEDIA_BASE_URL + asset.onchain_metadata?.image
-                    }
-                    title={asset.onchain_metadata?.title || "Untitled"}
-                    description={
-                      asset.onchain_metadata?.entries?.[0] ||
-                      "No description available"
-                    }
-                    price={100}
-                    tags={asset.onchain_metadata?.tags || []}
-                    location={
-                      locationInfo[asset.asset]
-                        ? `${locationInfo[asset.asset].city}, ${
-                            locationInfo[asset.asset].country
-                          }`
-                        : asset.onchain_metadata?.geo_location ||
-                          "Location unknown"
-                    }
-                  />
-                </Box>
-              </Box>
-            ))}
+            </Box>
+          ))
+        )}
       </Box>
 
       {/* Buy Dialog */}
