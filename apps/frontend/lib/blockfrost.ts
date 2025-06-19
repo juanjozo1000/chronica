@@ -1,5 +1,15 @@
-const BLOCKFROST_API_URL = "https://cardano-mainnet.blockfrost.io/api/v0";
-const POLICY_ID = "c6a87a1e40f3b63a1b46f3651e37ca872f32caf099b4a78662c9a858";
+const BLOCKFROST_API_URL =
+  process.env.ENVIRONMENT === "PROD"
+    ? "https://cardano-mainnet.blockfrost.io/api/v0"
+    : "https://cardano-preprod.blockfrost.io/api/v0";
+const POLICY_ID =
+  process.env.ENVIRONMENT === "PROD"
+    ? "c6a87a1e40f3b63a1b46f3651e37ca872f32caf099b4a78662c9a858"
+    : "7fa9e497b57458a394dd4e58604aeb29b90cce2e07640306920a05b1";
+const PROJECT_ID =
+  process.env.ENVIRONMENT === "PROD"
+    ? process.env.NEXT_PUBLIC_BLOCKFROST_API_KEY
+    : process.env.NEXT_PUBLIC_BLOCKFROST_API_KEY_DEV;
 
 export interface BlockfrostAsset {
   asset: string;
@@ -32,7 +42,7 @@ export const fetchPolicyAssets = async (): Promise<BlockfrostAsset[]> => {
     `${BLOCKFROST_API_URL}/assets/policy/${POLICY_ID}`,
     {
       headers: {
-        project_id: process.env.NEXT_PUBLIC_BLOCKFROST_API_KEY || "",
+        project_id: PROJECT_ID || "",
       },
     }
   );
@@ -46,7 +56,11 @@ export const fetchPolicyAssets = async (): Promise<BlockfrostAsset[]> => {
   }
   // Remove asset c6a87a1e40f3b63a1b46f3651e37ca872f32caf099b4a78662c9a8584d696e7454657374
   let assets = await response.json();
-  const filteredAssets = assets.filter((asset: BlockfrostAsset) => asset.asset !== "c6a87a1e40f3b63a1b46f3651e37ca872f32caf099b4a78662c9a8584d696e7454657374");
+  const filteredAssets = assets.filter(
+    (asset: BlockfrostAsset) =>
+      asset.asset !==
+      "c6a87a1e40f3b63a1b46f3651e37ca872f32caf099b4a78662c9a8584d696e7454657374"
+  );
   assets = filteredAssets;
   // If no assets returned, return empty array
   if (!assets || assets.length === 0) {
@@ -61,7 +75,7 @@ export const fetchPolicyAssets = async (): Promise<BlockfrostAsset[]> => {
           `${BLOCKFROST_API_URL}/assets/${asset.asset}`,
           {
             headers: {
-              project_id: process.env.NEXT_PUBLIC_BLOCKFROST_API_KEY || "",
+              project_id: PROJECT_ID || "",
             },
           }
         );
